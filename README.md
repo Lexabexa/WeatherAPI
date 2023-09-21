@@ -13,3 +13,4 @@ THEN I am presented with a 5-day forecast that displays the date, an icon repres
 WHEN I click on a city in the search history
 THEN I am again presented with current and future conditions for that city
 
+![06-server-side-apis-demo](https://github.com/Lexabexa/WeatherAPI/assets/130160635/4caf56e6-a848-4480-8ff5-a2d84ae088f2)
