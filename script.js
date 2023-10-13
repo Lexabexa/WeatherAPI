@@ -22,3 +22,131 @@ function find(c){
 //ApiKey
 var APIKey="b9d8e2b2f3a2c4f2c1a1d0c9d1b1f8e4";
 
+//current weather
+function displayWeather(event){
+    event.preventDefault();
+    if(searchCity.val().trim()!==""){
+        city=searchCity.val().trim();
+        currentWeather(city);
+    }
+}
+//ajax call
+function currentWeather(city){
+   var queryURL= "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}" + city + "&APPID=" + APIKey;
+   $.ajax({
+    url:queryURL,
+    method:"GET",
+   }).then(function(response){
+       console.log(response);
+       //icon
+       var weatherIcon= response.weather[0].icon;
+       var iconUrl="https://openweathermap.org/img/wn/" + weatherIcon + ".png";
+       //date
+       var date=new Date(response.dt*1000).toLocaleDateString();
+       //parse response
+       $(currentCity).html(response.name +"("+date+")" + "<img src="+iconUrl+">");
+       //temp
+       var tempF = (response.main.temp - 273.15) * 1.80 + 32;
+       $(currentTemperature).html((tempF).toFixed(2)+"&#8457");
+       //humidity
+       $(currentHumidity).html(response.main.humidity+"%");
+       //wind speed
+       var ws=response.wind.speed;
+       var windSpeedMph=(ws*2.237).toFixed(1);
+       $(currentWSpeed).html(windSpeedMph+"MPH");
+       //UV Index
+       //UV ajax
+       UVIndex(response.coord.lon,response.coord.lat);
+       forecast(response.id);
+       if(response.cod==200){
+           var sCity=JSON.parse(localStorage.getItem("cityName"));
+           console.log(sCity);
+           if (sCity==null){
+               sCity=[];
+               sCity.push(city.toUpperCase());
+               localStorage.setItem("cityName",JSON.stringify(sCity));
+               addToList(city);
+           }
+           else {
+               if(find(city)>0){
+                   sCity.push(city.toUpperCase());
+                   localStorage.setItem("cityName",JSON.stringify(sCity));
+                   addToList(city);
+               }
+           }
+       }
+   });
+    }
+   //return UVIndex
+    function UVIndex(ln,lt){
+         var uvqURL="https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}"+APIKey+"&lat="+lt+"&lon="+ln;
+         $.ajax({
+              url:uvqURL,
+              method:"GET"
+         }).then(function(response){
+              $(currentUvindex).html(response.value);
+         });
+    }
+    //5 day forecast
+    function forecast(cityid){
+        var dayover= false;
+        var queryforcastURL="https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}"+APIKey+"&id="+cityid; 
+        $.ajax({
+            url:queryforcastURL,
+            method:"GET"
+        }).then(function(response){
+            for (i=0;i<5;i++){
+                var date= new Date((response.list[((i+1)*8)-1].dt)*1000).toLocaleDateString();
+                var iconcode= response.list[((i+1)*8)-1].weather[0].icon;
+                var iconurl="https://openweathermap.org/img/wn/"+iconcode+".png";
+                var tempK= response.list[((i+1)*8)-1].main.temp;
+                var tempF=(((tempK-273.5)*1.80)+32).toFixed(2);
+                var humidity= response.list[((i+1)*8)-1].main.humidity;
+
+                $("#fDate"+i).html(date);
+                $("#fImg"+i).html("<img src="+iconurl+">");
+                $("#fTemp"+i).html(tempF+"&#8457");
+                $("#fHumidity"+i).html(humidity+"%");
+            }
+        });
+    }
+    function addToList(c){
+        var listEl= $("<li>"+c.toUpperCase()+"</li>");
+        $(listEl).attr("class","list-group-item");
+        $(listEl).attr("data-value",c.toUpperCase());
+        $(".list-group").append(listEl);
+    }
+    //past searches
+    function invokePastSearch(event){
+        var liEl=event.target;
+        if (event.target.matches("li")){
+            city=liEl.textContent.trim();
+            currentWeather(city);
+        }
+    }
+    //load last city searched
+    function loadlastCity(){
+        $("ul").empty();
+        var sCity=JSON.parse(localStorage.getItem("cityname"));
+        if(sCity!==null){
+            sCity=JSON.parse(localStorage.getItem("cityname"));
+            for(i=0; i<sCity.length;i++){
+                addToList(sCity[i]);
+            }
+            city=sCity[i-1];
+            currentWeather(city);
+        }
+    }
+    //clear history
+    function clearHistory(event){
+        event.preventDefault();
+        sCity=[];
+        localStorage.removeItem("cityname");
+        document.location.reload();
+    }
+    //click handlers
+    $("#search-button").on("click",displayWeather);
+    $(window).on("load",loadlastCity);
+    $("#clear-history").on("click",clearHistory);
+    $(document).on("click",invokePastSearch);
+ 
